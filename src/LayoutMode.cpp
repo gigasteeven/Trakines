@@ -14,39 +14,43 @@ LayoutMode& LayoutMode::get() {
 }
 
 // Decide whether an object is "decoration" (hidden in layout) or gameplay
-// (kept as a silhouette). Mirrors XDBot's layout logic: solids/hazards/slopes
-// and interactive triggers stay; pure deco is hidden.
+// (kept as a silhouette). Instead of hardcoding the huge GameObjectType enum
+// (which differs across GD versions), rely on a small set of known gameplay
+// types; everything else is treated as decoration and hidden.
 static bool isDecoration(GameObject* obj) {
     if (!obj) return true;
+
     switch (obj->m_objectType) {
+        // Keep gameplay-relevant objects visible as silhouettes.
         case GameObjectType::Solid:
         case GameObjectType::Hazard:
         case GameObjectType::AnimatedHazard:
         case GameObjectType::Slope:
-        case GameObjectType::Player:
         case GameObjectType::GravityPad:
-        case GameObjectType::GravityPortal:
         case GameObjectType::YellowJumpPad:
         case GameObjectType::PinkJumpPad:
         case GameObjectType::RedJumpPad:
         case GameObjectType::YellowJumpRing:
         case GameObjectType::PinkJumpRing:
         case GameObjectType::RedJumpRing:
-        case GameObjectType::YellowPortal:
-        case GameObjectType::PurplePortal:
-        case GameObjectType::BluePortal:
-        case GameObjectType::GreenPortal:
-        case GameObjectType::PinkPortal:
-        case GameObjectType::OrangePortal:
+        case GameObjectType::InverseGravityPortal:
+        case GameObjectType::NormalGravityPortal:
+        case GameObjectType::ShipPortal:
+        case GameObjectType::CubePortal:
+        case GameObjectType::BallPortal:
+        case GameObjectType::UfoPortal:
+        case GameObjectType::RobotPortal:
+        case GameObjectType::SpiderPortal:
+        case GameObjectType::SwingPortal:
+        case GameObjectType::MirrorPortal:
+        case GameObjectType::NormalMirrorPortal:
         case GameObjectType::TeleportPortal:
-        case GameObjectType::YellowGravityPortal:
-        case GameObjectType::BlueGravityPortal:
-        case GameObjectType::SpeedPortal:
         case GameObjectType::Collectible:
         case GameObjectType::UserCoin:
         case GameObjectType::SecretCoin:
             return false;
         default:
+            // Everything else (Decoration, particles, text, etc.) is hidden.
             return true;
     }
 }

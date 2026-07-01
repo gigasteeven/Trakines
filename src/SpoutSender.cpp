@@ -2,12 +2,15 @@
 
 // Bundled Spout2 SDK. See libs/Spout2. This is the high-level SDK entry point
 // which internally handles GL/DX interop and shared texture creation.
+//
+// IMPORTANT: this TU must not include any Geode/cocos headers, because Spout's
+// bundled SpoutGLextensions.h conflicts with cocos' glew.h.
 #include <SpoutGL/Spout.h>
 
 namespace trakines {
 
-static spout::SPOUT* asSpout(void* p) {
-    return static_cast<spout::SPOUT*>(p);
+static Spout* asSpout(void* p) {
+    return static_cast<Spout*>(p);
 }
 
 SpoutSender& SpoutSender::get() {
@@ -23,7 +26,7 @@ void SpoutSender::ensure(const std::string& name, unsigned int width, unsigned i
     if (width == 0 || height == 0) return;
 
     if (!m_spout) {
-        m_spout = new spout::SPOUT();
+        m_spout = new Spout();
     }
 
     auto spout = asSpout(m_spout);
