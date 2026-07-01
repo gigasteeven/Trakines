@@ -29,20 +29,14 @@ FetchContent_MakeAvailable(Spout2)
 
 set(SPOUT_SDK_DIR "${spout2_SOURCE_DIR}/SPOUTSDK/SpoutGL")
 
-set(SPOUT_SOURCES
-    "${SPOUT_SDK_DIR}/Spout.cpp"
-    "${SPOUT_SDK_DIR}/SpoutCommon.cpp"
-    "${SPOUT_SDK_DIR}/SpoutCopy.cpp"
-    "${SPOUT_SDK_DIR}/SpoutDirectX.cpp"
-    "${SPOUT_SDK_DIR}/SpoutFrameCount.cpp"
-    "${SPOUT_SDK_DIR}/SpoutGL.cpp"
-    "${SPOUT_SDK_DIR}/SpoutGLDXinterop.cpp"
-    "${SPOUT_SDK_DIR}/SpoutReceiver.cpp"
-    "${SPOUT_SDK_DIR}/SpoutSender.cpp"
-    "${SPOUT_SDK_DIR}/SpoutSenderNames.cpp"
-    "${SPOUT_SDK_DIR}/SpoutSharedMemory.cpp"
-    "${SPOUT_SDK_DIR}/SpoutUtils.cpp"
-)
+# Glob the actual .cpp files present in this SDK tag. The file set differs
+# between versions (e.g. there is no SpoutCommon.cpp), so a hardcoded list is
+# fragile. GLOB here is fine because the SDK is fetched at configure time.
+file(GLOB SPOUT_SOURCES "${SPOUT_SDK_DIR}/*.cpp")
+
+if (NOT SPOUT_SOURCES)
+    message(FATAL_ERROR "No Spout2 sources found in ${SPOUT_SDK_DIR}")
+endif()
 
 file(GLOB_RECURSE SOURCES
     src/*.cpp
