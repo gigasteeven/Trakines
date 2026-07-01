@@ -1,0 +1,76 @@
+# Trakines CI: builds the Windows .geode on a GitLab.com Windows SaaS runner.
+# Spout2 (D3D/OpenGL interop) is Windows-only, so we only build on Windows.
+
+stages:
+  - build
+
+variables:
+  GEODE_SDK_TAG: "v5.7.1"
+
+build:windows:
+  stage: build
+  tags:
+    - saas-windows-medium-amd64
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      $ProgressPreference = "SilentlyContinue"
+
+      $env:PATH = "C:\Program Files\CMake\bin;$env:PATH"
+
+      # --- Geode CLI (used to package the .geode) ---
+      $headers = @{ "User-Agent" = "trakines-ci" }
+      $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/geode-sdk/cli/releases/latest" -Headers $headers
+      $asset = $rel.assets | Where-Object { $_.name -like "*win*.zip" } | Select-Object -First 1
+      Invoke-WebRequest -Uri $asset.browser_download_url -OutFile geode-cli.zip
+      Expand-Archive -Path geode-cli.zip -DestinationPath "$env:USERPROFILE\geode-cli" -Force
+      $env:PATH = "$env:USERPROFILE\geode-cli;$env:PATH"
+
+      # --- Geode SDK from git (no CLI profile needed for building) ---
+      $sdkDir = "$env:USERPROFILE\geode-sdk"
+      if (Test-Path $sdkDir) { Remove-Item -Recurse -Force $sdkDir }
+      git clone --branch "$env:GEODE_SDK_TAG" --depth 1 --recurse-submodules https://github.com/geode-sdk/geode.git $sdkDir
+      if ($LASTEXITCODE -ne 0) { throw "Failed to clone Geode SDK $env:GEODE_SDK_TAG" }
+      $env:GEODE_SDK = $sdkDir
+
+      # --- Configure + build ---
+      cmake -B build -S . -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      if ($LASTEXITCODE -ne 0) { throw "CMake configure failed" }
+      cmake --build build --config RelWithDebInfo --parallel
+      if ($LASTEXITCODE -ne 0) { throw "CMake build failed" }
+
+      # --- Locate the built .dll and package it into a .geode explicitly ---
+      New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+
+      $dll = Get-ChildItem -Path build -Recurse -Filter "Trakines.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
+      if ($dll) {
+        Write-Host "Found built DLL: $($dll.FullName)"
+        # geode package pack <binary> <output.geode> using mod.json in cwd
+        geode package new $dll.FullName --binary $dll.FullName --output "artifacts\Trakines.geode" 2>$null
+      }
+
+      # --- Also grab any .geode CMake already produced ---
+      $geodes = Get-ChildItem -Path build -Recurse -Filter *.geode -ErrorAction SilentlyContinue
+      foreach ($g in $geodes) { Copy-Item $g.FullName -Destination artifacts -Force }
+
+      Write-Host "===== Contents of build tree (dll/geode) ====="
+      Get-ChildItem -Path build -Recurse -Include *.geode,*.dll -ErrorAction SilentlyContinue | Select-Object FullName, Length | Format-Table -AutoSize
+
+      Write-Host "===== artifacts/ ====="
+      Get-ChildItem -Path artifacts -ErrorAction SilentlyContinue | Select-Object FullName, Length | Format-Table -AutoSize
+
+      if (-not (Get-ChildItem -Path artifacts -Filter *.geode -ErrorAction SilentlyContinue)) {
+        throw "No .geode produced. See build tree listing above."
+      }
+  artifacts:
+    name: "Trakines-$CI_COMMIT_SHORT_SHA"
+    when: always
+    paths:
+      - artifacts/*.geode
+    expire_in: 4 weeks
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH'

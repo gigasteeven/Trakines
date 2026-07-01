@@ -1,0 +1,50 @@
+{
+    "geode": "5.7.1",
+    "gd": {
+        "win": "2.2081"
+    },
+    "id": "gigasteeven.trakines",
+    "name": "Trakines",
+    "version": "v1.0.0",
+    "developer": "gigasteeven",
+    "description": "Layout mode on screen, full decorated level to OBS via Spout2.",
+    "tags": ["enhancement", "stream"],
+    "settings": {
+        "enabled": {
+            "name": "Enable Trakines",
+            "description": "Master switch. When on, the play layer shows layout mode on screen while sending the full decorated level to OBS via Spout2.",
+            "type": "bool",
+            "default": true
+        },
+        "spout-enabled": {
+            "name": "Enable Spout2 Output",
+            "description": "Send the full decorated frame to OBS via a Spout2 sender named 'Trakines'.",
+            "type": "bool",
+            "default": true
+        },
+        "spout-sender-name": {
+            "name": "Spout Sender Name",
+            "description": "Name of the Spout2 sender that OBS captures.",
+            "type": "string",
+            "default": "Trakines"
+        },
+        "layout-bg-color": {
+            "name": "Layout Background Color",
+            "description": "Background color used in on-screen layout mode.",
+            "type": "color",
+            "default": "5b9bd5"
+        },
+        "layout-object-color": {
+            "name": "Layout Object Color",
+            "description": "Silhouette color used for objects in on-screen layout mode.",
+            "type": "color",
+            "default": "ffffff"
+        },
+        "layout-in-editor": {
+            "name": "Layout Mode In Editor Playtest",
+            "description": "If off, the editor and its playtest are mirrored 1:1 and layout mode is disabled there.",
+            "type": "bool",
+            "default": false
+        }
+    }
+}

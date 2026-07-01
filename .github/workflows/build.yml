@@ -1,0 +1,46 @@
+name: Build Trakines
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Spout2 is Windows-only, so Trakines only builds on Windows.
+    name: Build Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build the mod
+        uses: geode-sdk/build-geode-mod@main
+        with:
+          # Match mod.json "geode": "5.7.1".
+          sdk: v5.7.1
+          # Windows x64 (Spout2 needs D3D/OpenGL interop).
+          target: Win64
+          # Keep debug info; RelWithDebInfo builds faster than full Release here.
+          configure-args: -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+  package:
+    name: Package .geode
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Combine build outputs into a single .geode
+        uses: geode-sdk/build-geode-mod/combine@main
+        id: build
+
+      - name: Upload .geode artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Trakines
+          path: ${{ steps.build.outputs.build-output }}
+          if-no-files-found: error
